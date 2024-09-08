@@ -1,0 +1,10 @@
+body {
+  padding-top: 20px;
+}
+.result-label {
+  font-weight: bold;
+}
+.table th,
+.table td {
+  text-align: left;
+}
