@@ -88,3 +88,24 @@ document
 document
   .getElementById("endDate")
   .addEventListener("change", calculateAndDisplayResults);
+
+document.addEventListener("DOMContentLoaded", function () {
+  const startDateInput = document.getElementById("startDate");
+  const endDateInput = document.getElementById("endDate");
+
+  // Dapatkan tanggal hari ini
+  const today = new Date();
+
+  // Set default start date ke tanggal 1 bulan ini
+  const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+  startDate.setDate(startDate.getDate() + 1); // Tambah 1 hari
+
+  // Format tanggal
+  startDateInput.value = startDate.toISOString().split("T")[0];
+
+  // Set default end date ke hari ini
+  endDateInput.value = today.toISOString().split("T")[0];
+
+  // Panggil fungsi untuk menampilkan hasil segera
+  calculateAndDisplayResults();
+});
