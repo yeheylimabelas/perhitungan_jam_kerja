@@ -71,7 +71,7 @@ function calculateAndDisplayResults() {
         <tr><th class="result-label">Jumlah Jam Kerja</th><td>${formatNumber(
           workingHoursCount
         )} Jam</td></tr>
-        <tr><th class="result-label">Jumlah Jam Kerja Asli</th><td>${workingHoursRealCount} Jam</td></tr>
+        <tr><th class="result-label bg-gray">Jumlah Jam Kerja Asli</th><td class="bg-gray">${workingHoursRealCount} Jam</td></tr>
         <tr><th class="result-label">Jumlah Menit</th><td>${formatNumber(
           totalMinutes
         )} Menit</td></tr>
