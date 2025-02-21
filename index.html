@@ -10,6 +10,10 @@
       integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
       crossorigin="anonymous"
     />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+    />
     <link rel="stylesheet" href="style.css" />
     <link
       rel="icon"
@@ -23,21 +27,55 @@
       <form id="dateForm" class="mb-4">
         <div class="mb-3">
           <label for="startDate" class="form-label"
-            >Masukkan tanggal mulai (YYYY-MM-DD):</label
+            >Masukkan tanggal mulai:</label
           >
-          <input type="date" id="startDate" class="form-control" required />
+          <div class="input-group">
+            <input
+              type="text"
+              id="startDate"
+              class="form-control"
+              readonly
+              required
+            />
+            <span class="input-group-text cursor-pointer" id="startDateIcon"
+              >📅</span
+            >
+          </div>
         </div>
+
         <div class="mb-3">
           <label for="endDate" class="form-label"
-            >Masukkan tanggal akhir (YYYY-MM-DD):</label
+            >Masukkan tanggal akhir:</label
           >
-          <input type="date" id="endDate" class="form-control" required />
+          <div class="input-group">
+            <input
+              type="text"
+              id="endDate"
+              class="form-control"
+              readonly
+              required
+            />
+            <span class="input-group-text cursor-pointer" id="endDateIcon"
+              >📅</span
+            >
+          </div>
         </div>
-        <div class="mb-3">
-          <label for="holidays" class="form-label"
+        <div class="mb-3 position-relative">
+          <label for="holidayPicker" class="form-label"
             >Pilih Hari Libur (bisa lebih dari 1):</label
           >
-          <input type="date" id="holidayPicker" class="form-control" />
+          <div class="input-group">
+            <input
+              type="text"
+              id="holidayPicker"
+              class="form-control"
+              placeholder="Pilih tanggal libur..."
+              readonly
+            />
+            <span class="input-group-text cursor-pointer" id="calendarIcon">
+              📅
+            </span>
+          </div>
         </div>
         <div id="holidayTagsContainer" class="d-flex flex-wrap mt-3"></div>
       </form>
@@ -54,6 +92,7 @@
       integrity="sha384-pb5iUHT2OTpTrT3jbvNhF3bvn4UUSdbQqil7qqsk5gybVWwYqF1Jz4chQ8SBuGHX"
       crossorigin="anonymous"
     ></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="script.js"></script>
   </body>
 </html>

@@ -1,23 +1,149 @@
+document.addEventListener("DOMContentLoaded", function () {
+  const startDateInput = document.getElementById("startDate");
+  const endDateInput = document.getElementById("endDate");
+  const startDateIcon = document.getElementById("startDateIcon");
+  const endDateIcon = document.getElementById("endDateIcon");
+
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mei",
+    "Jun",
+    "Jul",
+    "Agu",
+    "Sep",
+    "Okt",
+    "Nov",
+    "Des",
+  ];
+  const dayNames = [
+    "Minggu",
+    "Senin",
+    "Selasa",
+    "Rabu",
+    "Kamis",
+    "Jumat",
+    "Sabtu",
+  ];
+
+  function formatDateToReadable(dateString) {
+    const date = new Date(dateString + "T00:00:00");
+    const dayName = dayNames[date.getDay()];
+    const day = date.getDate();
+    const month = monthNames[date.getMonth()];
+    const year = date.getFullYear();
+
+    return `${dayName}, ${day} ${month} ${year}`;
+  }
+
+  function setupFlatpickr(inputElement, iconElement) {
+    const fp = flatpickr(inputElement, {
+      dateFormat: "Y-m-d",
+      allowInput: false,
+      clickOpens: true,
+      onChange: function (selectedDates) {
+        if (selectedDates.length > 0) {
+          const selectedDate = selectedDates[0].toISOString().split("T")[0];
+          inputElement.value = formatDateToReadable(selectedDate);
+          inputElement.setAttribute("data-value", selectedDate);
+        }
+      },
+    });
+
+    iconElement.addEventListener("click", function () {
+      fp.open();
+    });
+  }
+
+  setupFlatpickr(startDateInput, startDateIcon);
+  setupFlatpickr(endDateInput, endDateIcon);
+});
+
 let holidays = [];
 window.holidays = [];
 
 document.addEventListener("DOMContentLoaded", function () {
   const holidayPicker = document.getElementById("holidayPicker");
+  const calendarIcon = document.getElementById("calendarIcon");
   const holidayTagsContainer = document.getElementById("holidayTagsContainer");
+
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mei",
+    "Jun",
+    "Jul",
+    "Agu",
+    "Sep",
+    "Okt",
+    "Nov",
+    "Des",
+  ];
+
+  function formatDateToReadable(dateString) {
+    const date = new Date(dateString + "T00:00:00");
+    const dayNames = [
+      "Minggu",
+      "Senin",
+      "Selasa",
+      "Rabu",
+      "Kamis",
+      "Jumat",
+      "Sabtu",
+    ];
+
+    const dayName = dayNames[date.getDay()];
+    const day = date.getDate();
+    const month = monthNames[date.getMonth()];
+    const year = date.getFullYear();
+
+    return `${dayName}, ${day} ${month} ${year}`;
+  }
+
+  const fp = flatpickr(holidayPicker, {
+    mode: "multiple",
+    dateFormat: "Y-m-d",
+    allowInput: false,
+    clickOpens: true,
+    onChange: function (selectedDates) {
+      holidays = selectedDates.map((date) => {
+        const localISO = new Date(
+          date.getTime() - date.getTimezoneOffset() * 60000
+        )
+          .toISOString()
+          .split("T")[0];
+        return localISO;
+      });
+
+      holidays.sort();
+      updateHolidayTags();
+      calculateAndDisplayResults();
+    },
+  });
+
+  calendarIcon.addEventListener("click", function () {
+    fp.open();
+  });
 
   function updateHolidayTags() {
     holidayTagsContainer.innerHTML = "";
 
     holidays.forEach((holiday) => {
+      const formattedDate = formatDateToReadable(holiday);
+
       const tag = document.createElement("span");
       tag.classList.add(
         "badge",
-        "bg-primary",
+        "bg-danger",
         "m-1",
         "d-flex",
         "align-items-center"
       );
-      tag.innerText = holiday;
+      tag.innerText = formattedDate;
 
       const closeIcon = document.createElement("span");
       closeIcon.classList.add("ms-2", "cursor-pointer");
@@ -27,32 +153,18 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
       tag.appendChild(closeIcon);
-
       holidayTagsContainer.appendChild(tag);
     });
-  }
-
-  function addHolidayTag(date) {
-    if (!holidays.includes(date)) {
-      holidays.push(date);
-      updateHolidayTags();
-      calculateAndDisplayResults();
-    }
+    holidayPicker.value = "";
   }
 
   function removeHolidayTag(dateToRemove) {
     holidays = holidays.filter((date) => date !== dateToRemove);
+    holidays.sort();
+    fp.setDate(holidays, false);
     updateHolidayTags();
     calculateAndDisplayResults();
   }
-
-  holidayPicker.addEventListener("change", function () {
-    const selectedDate = holidayPicker.value;
-    if (selectedDate) {
-      addHolidayTag(selectedDate);
-      holidayPicker.value = "";
-    }
-  });
 });
 
 function calculateAndDisplayResults() {
@@ -129,12 +241,12 @@ function calculateAndDisplayResults() {
         <tr><th class="result-label">Jumlah Hari Kerja</th><td>${formatNumber(
           workingDaysCount
         )} Hari</td></tr>
-        <tr><th class="result-label">Jumlah Hari Libur</th><td>${formatNumber(
-          totalHolidays
-        )} Hari (Sabtu, Minggu, Hari Libur)</td></tr>
-        <tr><th class="result-label">Jumlah Minggu</th><td>${formatNumber(
-          totalWeeks
-        )} Minggu</td></tr>
+        <tr><th class="result-label" style="background-color: #f7b9b5;">Jumlah Hari Libur</th>
+          <td style="background-color: #f7b9b5;">${formatNumber(
+            totalHolidays
+          )} Hari (Sabtu, Minggu, Hari Libur)</td></tr>
+        <tr><th class="result-label">Jumlah Minggu</th>
+          <td>${formatNumber(totalWeeks)} Minggu</td></tr>
         <tr><th class="result-label">Jumlah Semua Jam Hari</th><td>${formatNumber(
           totalAllHours
         )} Jam</td></tr>
@@ -151,25 +263,81 @@ function calculateAndDisplayResults() {
     `;
 }
 
-document
-  .getElementById("startDate")
-  .addEventListener("change", calculateAndDisplayResults);
-document
-  .getElementById("endDate")
-  .addEventListener("change", calculateAndDisplayResults);
-
 document.addEventListener("DOMContentLoaded", function () {
   const startDateInput = document.getElementById("startDate");
   const endDateInput = document.getElementById("endDate");
+  const startDateIcon = document.getElementById("startDateIcon");
+  const endDateIcon = document.getElementById("endDateIcon");
+
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mei",
+    "Jun",
+    "Jul",
+    "Agu",
+    "Sep",
+    "Okt",
+    "Nov",
+    "Des",
+  ];
+  const dayNames = [
+    "Minggu",
+    "Senin",
+    "Selasa",
+    "Rabu",
+    "Kamis",
+    "Jumat",
+    "Sabtu",
+  ];
+
+  function formatDateToReadable(dateString) {
+    const date = new Date(dateString);
+    const dayName = dayNames[date.getDay()];
+    const day = date.getDate();
+    const month = monthNames[date.getMonth()];
+    const year = date.getFullYear();
+    return `${dayName}, ${day} ${month} ${year}`;
+  }
+
+  function setupFlatpickr(inputElement, iconElement, defaultDate) {
+    const fp = flatpickr(inputElement, {
+      dateFormat: "Y-m-d",
+      defaultDate: defaultDate,
+      allowInput: false,
+      clickOpens: true,
+      onReady: function (selectedDates) {
+        if (selectedDates.length > 0) {
+          const selectedDate = selectedDates[0].toLocaleDateString("sv-SE");
+          inputElement.value = formatDateToReadable(selectedDate);
+          inputElement.setAttribute("data-value", selectedDate);
+        }
+      },
+      onChange: function (selectedDates) {
+        if (selectedDates.length > 0) {
+          const selectedDate = selectedDates[0].toLocaleDateString("sv-SE");
+          inputElement.value = formatDateToReadable(selectedDate);
+          inputElement.setAttribute("data-value", selectedDate);
+          calculateAndDisplayResults();
+        }
+      },
+    });
+
+    iconElement.addEventListener("click", function () {
+      fp.open();
+    });
+
+    return fp;
+  }
 
   const today = new Date();
-
   const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
-  startDate.setDate(startDate.getDate() + 1);
+  startDate.setDate(startDate.getDate());
 
-  startDateInput.value = startDate.toISOString().split("T")[0];
-
-  endDateInput.value = today.toISOString().split("T")[0];
+  setupFlatpickr(startDateInput, startDateIcon, startDate);
+  setupFlatpickr(endDateInput, endDateIcon, today);
 
   calculateAndDisplayResults();
 });
