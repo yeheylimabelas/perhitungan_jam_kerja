@@ -359,3 +359,33 @@ toggleThemeBtn.addEventListener("click", () => {
   );
   updateThemeUI();
 });
+
+(function () {
+  const btn = document.getElementById("toggleThemeBtn");
+  let isDragging = false;
+  let offsetX, offsetY;
+
+  btn.addEventListener("mousedown", function (e) {
+    isDragging = true;
+    offsetX = e.clientX - btn.getBoundingClientRect().left;
+    offsetY = e.clientY - btn.getBoundingClientRect().top;
+    btn.style.transition = "none";
+  });
+
+  document.addEventListener("mousemove", function (e) {
+    if (isDragging) {
+      const x = e.clientX - offsetX;
+      const y = e.clientY - offsetY;
+      btn.style.left = `${x}px`;
+      btn.style.top = `${y}px`;
+      btn.style.right = "auto";
+      btn.style.bottom = "auto";
+      btn.style.position = "fixed";
+    }
+  });
+
+  document.addEventListener("mouseup", function () {
+    isDragging = false;
+    btn.style.transition = "";
+  });
+})();
