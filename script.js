@@ -362,9 +362,15 @@ toggleThemeBtn.addEventListener("click", () => {
 
 (function () {
   const btn = document.getElementById("toggleThemeBtn");
+  let offsetX = 0;
+  let offsetY = 0;
   let isDragging = false;
-  let offsetX, offsetY;
+  let dragStartTime = 0;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let isDark = document.documentElement.classList.contains("dark");
 
+  // === Support Mouse ===
   btn.addEventListener("mousedown", function (e) {
     isDragging = true;
     offsetX = e.clientX - btn.getBoundingClientRect().left;
@@ -376,11 +382,7 @@ toggleThemeBtn.addEventListener("click", () => {
     if (isDragging) {
       const x = e.clientX - offsetX;
       const y = e.clientY - offsetY;
-      btn.style.left = `${x}px`;
-      btn.style.top = `${y}px`;
-      btn.style.right = "auto";
-      btn.style.bottom = "auto";
-      btn.style.position = "fixed";
+      moveButton(x, y);
     }
   });
 
@@ -388,4 +390,73 @@ toggleThemeBtn.addEventListener("click", () => {
     isDragging = false;
     btn.style.transition = "";
   });
+
+  // === Support Touch ===
+  btn.addEventListener(
+    "touchstart",
+    function (e) {
+      isDragging = false;
+      const touch = e.touches[0];
+      offsetX = touch.clientX - btn.getBoundingClientRect().left;
+      offsetY = touch.clientY - btn.getBoundingClientRect().top;
+      dragStartTime = Date.now();
+      dragStartX = touch.clientX;
+      dragStartY = touch.clientY;
+      btn.style.transition = "none";
+    },
+    { passive: false }
+  );
+
+  btn.addEventListener(
+    "touchmove",
+    function (e) {
+      const touch = e.touches[0];
+      const dx = touch.clientX - dragStartX;
+      const dy = touch.clientY - dragStartY;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      if (distance > 10) {
+        isDragging = true;
+        const x = touch.clientX - offsetX;
+        const y = touch.clientY - offsetY;
+        moveButton(x, y);
+        e.preventDefault(); // ✅ Hindari scroll saat drag
+      }
+    },
+    { passive: false }
+  );
+
+  btn.addEventListener("touchend", function () {
+    const dragDuration = Date.now() - dragStartTime;
+
+    if (!isDragging && dragDuration < 200) {
+      toggleTheme(); // ✅ Tap pendek: ubah tema
+    }
+
+    isDragging = false;
+  });
+
+  // === Toggle Tema
+  function toggleTheme() {
+    isDark = !isDark;
+    const icon = btn.querySelector("i");
+
+    if (isDark) {
+      icon.classList.remove("bi-brightness-high-fill");
+      icon.classList.add("bi-moon-stars-fill");
+      document.documentElement.classList.add("dark");
+    } else {
+      icon.classList.remove("bi-moon-stars-fill");
+      icon.classList.add("bi-brightness-high-fill");
+      document.documentElement.classList.remove("dark");
+    }
+  }
+
+  // === Fungsi untuk menggerakkan tombol
+  function moveButton(x, y) {
+    btn.style.left = `${x}px`;
+    btn.style.top = `${y}px`;
+    btn.style.right = "auto";
+    btn.style.bottom = "auto";
+    btn.style.position = "fixed";
+  }
 })();
