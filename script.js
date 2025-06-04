@@ -1,10 +1,8 @@
 document.addEventListener("DOMContentLoaded", function () {
-  // === GLOBAL VARIABLES ===
   let autoWeekendHolidays = [];
   let holidays = [];
   window.holidays = holidays;
 
-  // === DOM ELEMENTS ===
   const startDateInput = document.getElementById("startDate");
   const endDateInput = document.getElementById("endDate");
   const startDateIcon = document.getElementById("startDateIcon");
@@ -13,7 +11,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const calendarIcon = document.getElementById("calendarIcon");
   const holidayTagsContainer = document.getElementById("holidayTagsContainer");
 
-  // === CONSTANTS ===
   const monthNames = [
     "Jan",
     "Feb",
@@ -38,7 +35,6 @@ document.addEventListener("DOMContentLoaded", function () {
     "Sabtu",
   ];
 
-  // === UTIL FUNCTIONS ===
   function formatDateToReadable(dateString) {
     const date = new Date(dateString + "T00:00:00");
     const dayName = dayNames[date.getDay()];
@@ -49,7 +45,6 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   let fp;
-  // === FLATPICKR SETUP ===
   function setupFlatpickr(inputElement, iconElement, defaultDate) {
     const fp = flatpickr(inputElement, {
       dateFormat: "Y-m-d",
@@ -101,7 +96,6 @@ document.addEventListener("DOMContentLoaded", function () {
           .split("T")[0];
         return localISO;
       });
-
       holidays.sort();
       updateHolidayTags();
       calculateAndDisplayResults();
@@ -114,7 +108,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   updateHolidayTags();
 
-  // === TAG RENDER FUNCTION ===
   function getWeekendDates(start, end) {
     const weekends = [];
     const current = new Date(start);
@@ -130,13 +123,10 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function updateHolidayTags() {
-    if (!fp) return; // ⛔ Kalau belum di-assign, jangan lanjut
-
+    if (!fp) return;
     holidayTagsContainer.innerHTML = "";
-
     const startInput = startDateInput.getAttribute("data-value");
     const endInput = endDateInput.getAttribute("data-value");
-
     autoWeekendHolidays = [];
 
     if (startInput && endInput) {
@@ -154,29 +144,31 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const tag = document.createElement("span");
       tag.classList.add(
-        "badge",
-        isAutoWeekend ? "bg-secondary" : "bg-danger",
-        "m-1",
-        "d-flex",
-        "align-items-center",
-        "cursor-pointer"
+        "inline-flex",
+        "items-center",
+        "rounded-md",
+        "px-3",
+        "py-1",
+        "text-sm",
+        "text-white",
+        "cursor-pointer",
+        isAutoWeekend ? "bg-gray-500" : "bg-red-500",
+        "ml-1",
+        "mb-1"
       );
       tag.innerText = formattedDate;
 
       if (!isAutoWeekend) {
         const closeIcon = document.createElement("span");
-        closeIcon.classList.add("ms-2");
+        closeIcon.classList.add("ml-2", "text-white", "font-bold");
         closeIcon.innerHTML = "&times;";
         closeIcon.addEventListener("click", function (e) {
           e.stopPropagation();
           removeHolidayTag(dateStr);
         });
-
-        // Klik seluruh tag juga bisa hapus
         tag.addEventListener("click", function () {
           removeHolidayTag(dateStr);
         });
-
         tag.appendChild(closeIcon);
       }
 
@@ -196,11 +188,9 @@ document.addEventListener("DOMContentLoaded", function () {
     calculateAndDisplayResults();
   }
 
-  // === CALCULATION FUNCTION ===
   function calculateAndDisplayResults() {
     const startDateVal = startDateInput.getAttribute("data-value");
     const endDateVal = endDateInput.getAttribute("data-value");
-
     if (!startDateVal || !endDateVal) {
       document.getElementById("resultTable").innerHTML = "";
       return;
@@ -225,11 +215,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     while (date <= endDate) {
       const day = date.getDay();
-      if (day !== 0 && day !== 6) {
-        workingDaysCount++;
-      } else {
-        totalHolidays++;
-      }
+      if (day !== 0 && day !== 6) workingDaysCount++;
+      else totalHolidays++;
       date.setDate(date.getDate() + 1);
     }
 
@@ -251,7 +238,7 @@ document.addEventListener("DOMContentLoaded", function () {
       Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
     const adjustedDuration = totalDays - holidayCount;
     const totalWeeks = Math.ceil(adjustedDuration / 7);
-    const workingHoursCount = workingDaysCount * 8;
+    const workingHoursCount = workingDaysCount * 9;
 
     const totalWorkSeconds = Math.floor(workingHoursCount * 3600);
     const totalMinutes = Math.floor(totalWorkSeconds / 60);
@@ -265,31 +252,110 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const resultTable = document.getElementById("resultTable");
     resultTable.innerHTML = `
-      <tr><th class="result-label">Jumlah Semua Hari</th><td>${formatNumber(
-        totalDays
-      )} Hari</td></tr>
-      <tr><th class="result-label">Jumlah Hari Kerja</th><td>${formatNumber(
-        workingDaysCount
-      )} Hari</td></tr>
-      <tr><th class="result-label" style="background-color: #f7b9b5;">Jumlah Hari Libur</th>
-        <td style="background-color: #f7b9b5;">${formatNumber(
-          totalHolidays
-        )} Hari (Sabtu, Minggu, Hari Libur)</td></tr>
-      <tr><th class="result-label">Jumlah Minggu</th>
-        <td>${formatNumber(totalWeeks)} Minggu</td></tr>
-      <tr><th class="result-label">Jumlah Semua Jam ${totalDays} Hari</th><td>${formatNumber(
-      totalAllHours
-    )} Jam</td></tr>
-      <tr><th class="result-label">Jumlah Jam Kerja</th><td>${formatNumber(
-        totalHours
-      )} Jam</td></tr>
-      <tr><th class="result-label bg-gray">Jumlah Jam Kerja Asli</th><td class="bg-gray">${workingHoursRealCount} Jam</td></tr>
+    
+      <tr><th class="text-left font-semibold px-2 py-1">Jumlah Minggu</th><td class="px-2 py-1">${formatNumber(
+        totalWeeks
+      )} Minggu</td></tr>
+
+      <tr class="calc-row" data-formula="${totalDays} Hari × 24 Jam = ${totalAllHours} Jam">
+        <th class="text-left font-semibold px-2 py-1">Jumlah Semua Hari</th>
+        <td class="px-2 py-1">${formatNumber(totalDays)} Hari
+          <i class="bi bi-calculator ml-2 text-gray-600 dark:text-orange-400"></i>
+          <span class="ml-2 text-sm text-gray-600 dark:text-orange-400 hidden calc-text"></span>
+        </td>
+      </tr>
+
+      <tr><th class="text-left font-semibold px-2 py-1 text-red-500">Jumlah Hari Libur</th><td class="px-2 py-1 text-red-500 font-semibold">${formatNumber(
+        totalHolidays
+      )} Hari (Sabtu, Minggu, Hari Libur)</td></tr>
+
+      <tr class="calc-row" data-formula="${workingDaysCount} Hari × 9 Jam Kerja = ${totalHours} Jam">
+        <th class="text-left font-semibold px-2 py-1">Jumlah Hari Kerja</th>
+        <td class="px-2 py-1">
+          ${formatNumber(workingDaysCount)} Hari
+          <i class="bi bi-calculator ml-2 text-gray-600 dark:text-orange-400"></i>
+          <span class="ml-2 text-sm text-gray-600 dark:text-orange-400 hidden calc-text"></span>
+        </td>
+      </tr>
+
+      <tr class="calc-row" data-formula="${workingDaysCount} Hari × 7.052173913 Jam = ${workingHoursRealCount} Jam">
+        <th class="text-left font-semibold px-2 py-1 text-green-500 dark:text-lime-400">Jumlah Jam Kerja Asli</th>
+        <td class="px-2 py-1 font-semibold text-green-500 dark:text-lime-400 cursor-pointer">
+          ${workingHoursRealCount} Jam
+          <i class="bi bi-calculator ml-2 text-gray-600 dark:text-orange-400"></i>
+          <span class="ml-2 text-sm text-gray-600 dark:text-orange-400 hidden calc-text"></span>
+        </td>
+      </tr>
     `;
+
+    document.querySelectorAll(".calc-row").forEach((row) => {
+      row.addEventListener("click", () => {
+        const icon = row.querySelector("i");
+        const formulaText = row.getAttribute("data-formula");
+        const textSpan = row.querySelector(".calc-text");
+
+        const isActive = icon.classList.contains("bi-calculator-fill");
+
+        icon.classList.toggle("bi-calculator", isActive);
+        icon.classList.toggle("bi-calculator-fill", !isActive);
+
+        textSpan.textContent = isActive ? "" : formulaText;
+        textSpan.classList.toggle("hidden", isActive);
+      });
+    });
 
     updateHolidayTags();
   }
 
-  // INITIAL CALLS
   calculateAndDisplayResults();
   updateHolidayTags();
+});
+const toggleThemeBtn = document.getElementById("toggleThemeBtn");
+let isDark = true;
+
+if (toggleThemeBtn) {
+  toggleThemeBtn.addEventListener("click", function () {
+    isDark = !isDark;
+    const icon = toggleThemeBtn.querySelector("i");
+    if (!icon) return;
+
+    if (isDark) {
+      icon.classList.remove("bi-brightness-high-fill");
+      icon.classList.add("bi-moon-stars-fill");
+    } else {
+      icon.classList.remove("bi-moon-stars-fill");
+      icon.classList.add("bi-brightness-high-fill");
+    }
+  });
+}
+
+const html = document.documentElement;
+const themeIcon = document.getElementById("themeIcon");
+
+function updateThemeUI() {
+  if (html.classList.contains("dark")) {
+    toggleThemeBtn.classList.remove("bg-yellow-500");
+    toggleThemeBtn.classList.add("dark:bg-gray-700");
+    themeIcon.className = "bi bi-moon-stars-fill";
+  } else {
+    toggleThemeBtn.classList.add("bg-yellow-500");
+    toggleThemeBtn.classList.remove("dark:bg-gray-700");
+    themeIcon.className = "bi bi-sun-fill";
+  }
+}
+
+if (localStorage.getItem("theme") === "light") {
+  html.classList.remove("dark");
+} else {
+  html.classList.add("dark");
+}
+updateThemeUI();
+
+toggleThemeBtn.addEventListener("click", () => {
+  html.classList.toggle("dark");
+  localStorage.setItem(
+    "theme",
+    html.classList.contains("dark") ? "dark" : "light"
+  );
+  updateThemeUI();
 });
