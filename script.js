@@ -1,287 +1,361 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const html = document.documentElement;
-  const themeBtn = document.getElementById("toggleThemeBtn");
-  const themeIcon = document.getElementById("themeIcon");
-  const startDateInput = document.getElementById("startDate");
-  const endDateInput = document.getElementById("endDate");
-  const startDateIcon = document.getElementById("startDateIcon");
-  const endDateIcon = document.getElementById("endDateIcon");
-  const holidayPicker = document.getElementById("holidayPicker");
-  const calendarIcon = document.getElementById("calendarIcon");
-  const holidayTagsContainer = document.getElementById("holidayTagsContainer");
-  const resultTable = document.getElementById("resultTable");
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  onSnapshot,
+} from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
-  const monthNames = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "Mei",
-    "Jun",
-    "Jul",
-    "Agu",
-    "Sep",
-    "Okt",
-    "Nov",
-    "Des",
-  ];
-  const dayNames = [
-    "Minggu",
-    "Senin",
-    "Selasa",
-    "Rabu",
-    "Kamis",
-    "Jumat",
-    "Sabtu",
-  ];
+// Firebase config
+const firebaseConfig = {
+  apiKey: "AIzaSyCxv4no-ygJdwxKyT0G__eNhHDeR8pcRAU",
+  authDomain: "hari-libur-kerja.firebaseapp.com",
+  projectId: "hari-libur-kerja",
+  storageBucket: "hari-libur-kerja.appspot.com",
+  messagingSenderId: "569635311380",
+  appId: "1:569635311380:web:ece4b043617378aabdfc01",
+};
+initializeApp(firebaseConfig);
+const db = getFirestore();
 
-  let holidays = [];
-  let autoWeekendHolidays = [];
-  window.holidays = holidays;
-  let fp;
+// Elements
+const html = document.documentElement;
+const themeBtn = document.getElementById("toggleThemeBtn");
+const themeIcon = document.getElementById("themeIcon");
+const startDateInput = document.getElementById("startDate");
+const endDateInput = document.getElementById("endDate");
+const startDateIcon = document.getElementById("startDateIcon");
+const endDateIcon = document.getElementById("endDateIcon");
+const holidayPicker = document.getElementById("holidayPicker");
+const calendarIcon = document.getElementById("calendarIcon");
+const holidayTagsContainer = document.getElementById("holidayTagsContainer");
+const resultTable = document.getElementById("resultTable");
 
-  const formatDateReadable = (str) => {
-    const date = new Date(str + "T00:00:00");
-    return `${dayNames[date.getDay()]}, ${date.getDate()} ${
-      monthNames[date.getMonth()]
-    } ${date.getFullYear()}`;
-  };
+const holidaysManual = [];
+const holidaysDB = [];
+let autoWeekendHolidays = [];
+let fp = null;
 
-  const getWeekendDates = (start, end) => {
-    const weekends = [];
-    const date = new Date(start);
-    while (date <= end) {
-      if ([0, 6].includes(date.getDay())) {
-        weekends.push(date.toISOString().split("T")[0]);
-      }
-      date.setDate(date.getDate() + 1);
+const monthNames = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "Mei",
+  "Jun",
+  "Jul",
+  "Agu",
+  "Sep",
+  "Okt",
+  "Nov",
+  "Des",
+];
+const dayNames = [
+  "Minggu",
+  "Senin",
+  "Selasa",
+  "Rabu",
+  "Kamis",
+  "Jumat",
+  "Sabtu",
+];
+
+// === Utilities ===
+const formatDateReadable = (str) => {
+  const date = new Date(str + "T00:00:00");
+  return `${dayNames[date.getDay()]}, ${date.getDate()} ${
+    monthNames[date.getMonth()]
+  } ${date.getFullYear()}`;
+};
+
+const getWeekendDates = (start, end) => {
+  const weekends = [];
+  const d = new Date(start);
+  while (d <= end) {
+    if ([0, 6].includes(d.getDay()))
+      weekends.push(d.toLocaleDateString("sv-SE"));
+    d.setDate(d.getDate() + 1);
+  }
+  return weekends;
+};
+
+const num = (n) => n.toLocaleString("id-ID");
+
+// === Theme ===
+const toggleTheme = () => {
+  html.classList.toggle("dark");
+  const isDark = html.classList.contains("dark");
+  localStorage.setItem("theme", isDark ? "dark" : "light");
+  themeBtn.classList.toggle("bg-yellow-500", !isDark);
+  themeBtn.classList.toggle("dark:bg-gray-700", isDark);
+  themeIcon.className = isDark ? "bi bi-moon-stars-fill" : "bi bi-sun-fill";
+};
+
+const setupDraggableButton = () => {
+  let offsetX = 0,
+    offsetY = 0,
+    isDragging = false;
+  themeBtn.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    offsetX = e.clientX - themeBtn.getBoundingClientRect().left;
+    offsetY = e.clientY - themeBtn.getBoundingClientRect().top;
+    themeBtn.style.transition = "none";
+  });
+  document.addEventListener("mousemove", (e) => {
+    if (isDragging) {
+      themeBtn.style.left = `${e.clientX - offsetX}px`;
+      themeBtn.style.top = `${e.clientY - offsetY}px`;
+      themeBtn.style.position = "fixed";
     }
-    return weekends;
-  };
+  });
+  document.addEventListener("mouseup", () => {
+    isDragging = false;
+    themeBtn.style.transition = "";
+  });
+};
 
-  const setupFlatpickr = (input, icon, defaultDate) => {
-    const instance = flatpickr(input, {
-      dateFormat: "Y-m-d",
-      defaultDate,
-      allowInput: false,
-      onChange: (dates) => {
-        if (dates.length) {
-          const val = dates[0].toLocaleDateString("sv-SE");
-          input.value = formatDateReadable(val);
-          input.setAttribute("data-value", val);
-          calculateResults();
+// === Flatpickr Setup ===
+const setupFlatpickr = (input, icon, defaultDate) => {
+  const instance = flatpickr(input, {
+    dateFormat: "Y-m-d",
+    defaultDate,
+    allowInput: false,
+    onChange: (dates) => syncInput(input, dates),
+    onReady: (dates) => syncInput(input, dates),
+  });
+  icon?.addEventListener("click", () => instance.open());
+  return instance;
+};
+
+const syncInput = (input, dates) => {
+  if (!dates.length) return;
+  const val = dates[0].toLocaleDateString("sv-SE");
+  input.value = formatDateReadable(val);
+  input.setAttribute("data-value", val);
+  calculateResults();
+  subscribeToRealtimeHoliday();
+};
+
+// === Tag Libur
+const updateHolidayTags = () => {
+  if (!fp) return;
+  holidayTagsContainer.innerHTML = "";
+
+  const start = new Date(startDateInput.dataset.value);
+  const end = new Date(endDateInput.dataset.value);
+  autoWeekendHolidays = getWeekendDates(start, end);
+
+  const allDates = [
+    ...new Set([...autoWeekendHolidays, ...holidaysDB, ...holidaysManual]),
+  ].sort();
+
+  allDates.forEach((date) => {
+    const isAuto = autoWeekendHolidays.includes(date);
+    const isDB = holidaysDB.includes(date);
+    const isManual = !isAuto && !isDB && holidaysManual.includes(date);
+
+    const tag = document.createElement("span");
+    tag.className =
+      "inline-flex items-center rounded-md px-3 py-1 text-sm text-white ml-1 mb-1 " +
+      (isAuto ? "bg-gray-500" : isDB ? "bg-orange-500" : "bg-red-500");
+
+    tag.textContent = formatDateReadable(date);
+
+    if (isManual) {
+      const close = document.createElement("span");
+      close.innerHTML = "&times;";
+      close.className = "ml-2 font-bold";
+      tag.appendChild(close);
+
+      // hanya manual yang bisa dihapus
+      tag.style.cursor = "pointer";
+      tag.addEventListener("click", () => removeHoliday(date));
+    } else {
+      tag.style.cursor = "default";
+    }
+
+    holidayTagsContainer.appendChild(tag);
+  });
+
+  fp.setDate(
+    allDates.map((d) => new Date(d + "T12:00:00")),
+    false
+  );
+
+  holidayPicker.value = "";
+};
+
+const removeHoliday = (date) => {
+  const idx = holidaysManual.indexOf(date);
+  if (idx !== -1) holidaysManual.splice(idx, 1);
+  holidaysManual.sort();
+  updateHolidayTags();
+  calculateResults();
+};
+
+// === Hitung Jam Kerja
+const calculateResults = () => {
+  const startStr = startDateInput.dataset.value;
+  const endStr = endDateInput.dataset.value;
+  if (!startStr || !endStr) return (resultTable.innerHTML = "");
+
+  const start = new Date(startStr);
+  const end = new Date(endStr);
+  if (start >= end)
+    return alert("Tanggal mulai harus lebih awal dari tanggal akhir.");
+
+  let workingDays = 0,
+    totalHolidays = 0;
+  const date = new Date(start);
+  while (date <= end) {
+    const isWeekend = [0, 6].includes(date.getDay());
+    if (isWeekend) totalHolidays++;
+    else workingDays++;
+    date.setDate(date.getDate() + 1);
+  }
+
+  const allLibur = [...new Set([...holidaysDB, ...holidaysManual])];
+  const extraHolidays = allLibur.filter((h) => {
+    const d = new Date(h);
+    return d >= start && d <= end && ![0, 6].includes(d.getDay());
+  });
+
+  workingDays -= extraHolidays.length;
+  totalHolidays += extraHolidays.length;
+
+  const totalDays = (end - start) / 86400000 + 1;
+  const adjustedDuration = totalDays - extraHolidays.length;
+  const totalWeeks = Math.ceil(adjustedDuration / 7);
+  const totalHours = workingDays * 9;
+  const totalAllHours = totalDays * 24;
+  const realWorkHours = Math.round(workingDays * 7.052173913 * 100) / 100;
+
+  const num = (n) => n.toLocaleString("id-ID");
+
+  resultTable.innerHTML = `
+    <tr><th class="text-left font-semibold px-2 py-1">Jumlah Minggu</th><td class="px-2 py-1">${num(
+      totalWeeks
+    )} Minggu</td></tr>
+    <tr class="calc-row" data-formula="${totalDays} Hari × 24 Jam = ${totalAllHours} Jam">
+      <th class="text-left font-semibold px-2 py-1">Jumlah Semua Hari</th>
+      <td class="px-2 py-1">${num(
+        totalDays
+      )} Hari <i class="bi bi-calculator ml-2 text-gray-600 dark:text-orange-400"></i><span class="ml-2 text-sm text-gray-600 dark:text-orange-400 hidden calc-text"></span></td>
+    </tr>
+    <tr><th class="text-left font-semibold px-2 py-1 text-red-500">Jumlah Hari Libur</th><td class="px-2 py-1 text-red-500 font-semibold">${num(
+      totalHolidays
+    )} Hari</td></tr>
+    <tr class="calc-row" data-formula="${workingDays} Hari × 9 Jam = ${totalHours} Jam">
+      <th class="text-left font-semibold px-2 py-1">Jumlah Hari Kerja</th>
+      <td class="px-2 py-1">${num(
+        workingDays
+      )} Hari <i class="bi bi-calculator ml-2 text-gray-600 dark:text-orange-400"></i><span class="ml-2 text-sm text-gray-600 dark:text-orange-400 hidden calc-text"></span></td>
+    </tr>
+    <tr class="calc-row" data-formula="${workingDays} Hari × 7.052173913 Jam = ${realWorkHours} Jam">
+      <th class="text-left font-semibold px-2 py-1 text-green-500 dark:text-lime-400">Jumlah Jam Kerja Asli</th>
+      <td class="px-2 py-1 font-semibold text-green-500 dark:text-lime-400">${realWorkHours} Jam <i class="bi bi-calculator ml-2 text-gray-600 dark:text-orange-400"></i><span class="ml-2 text-sm text-gray-600 dark:text-orange-400 hidden calc-text"></span></td>
+    </tr>
+  `;
+
+  document.querySelectorAll(".calc-row").forEach((row) => {
+    row.addEventListener("click", () => {
+      const icon = row.querySelector("i");
+      const text = row.querySelector(".calc-text");
+      const formula = row.dataset.formula;
+      const isShown = icon.classList.contains("bi-calculator-fill");
+
+      icon.classList.toggle("bi-calculator", isShown);
+      icon.classList.toggle("bi-calculator-fill", !isShown);
+      text.textContent = isShown ? "" : formula;
+      text.classList.toggle("hidden", isShown);
+    });
+  });
+
+  if (fp && typeof fp.set === "function") {
+    fp.set("disable", [
+      function (date) {
+        const iso = date.toLocaleDateString("sv-SE");
+        return autoWeekendHolidays.includes(iso) || holidaysDB.includes(iso);
+      },
+    ]);
+
+    fp.set("onDayCreate", [
+      function (dObj, dStr, fp, dayElem) {
+        const date = dayElem.dateObj;
+        const iso = date.toLocaleDateString("sv-SE");
+
+        if (autoWeekendHolidays.includes(iso)) {
+          dayElem.style.backgroundColor = "#6b7280"; // abu-abu
+          dayElem.style.color = "white";
+        } else if (holidaysDB.includes(iso)) {
+          dayElem.style.backgroundColor = "#f97316"; // orange
+          dayElem.style.color = "white";
+        } else if (holidaysManual.includes(iso)) {
+          dayElem.style.backgroundColor = "#ef4444"; // merah
+          dayElem.style.color = "white";
         }
       },
-      onReady: (dates) => {
-        if (dates.length) {
-          const val = dates[0].toLocaleDateString("sv-SE");
-          input.value = formatDateReadable(val);
-          input.setAttribute("data-value", val);
-          calculateResults();
-        }
-      },
+    ]);
+  }
+
+  updateHolidayTags();
+};
+
+// === Realtime Firestore
+let unsubscribe = null;
+const subscribeToRealtimeHoliday = () => {
+  if (unsubscribe) unsubscribe();
+
+  const startValue = startDateInput.dataset.value;
+  const endValue = endDateInput.dataset.value;
+
+  if (!startValue || !endValue) return;
+
+  const start = new Date(startValue);
+  const end = new Date(endValue);
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return;
+
+  start.setHours(0, 0, 0, 0);
+  end.setHours(23, 59, 59, 999);
+
+  const q = query(
+    collection(db, "HolidayDate"),
+    where("DateHoliday", ">=", start),
+    where("DateHoliday", "<=", end)
+  );
+
+  unsubscribe = onSnapshot(q, (snapshot) => {
+    holidaysDB.length = 0;
+    snapshot.forEach((doc) => {
+      const d = doc.data().DateHoliday.toDate();
+      const dateStr = d.toLocaleDateString("sv-SE");
+      holidaysDB.push(dateStr);
     });
-
-    icon?.addEventListener("click", () => instance.open());
-    return instance;
-  };
-
-  const updateHolidayTags = () => {
-    holidayTagsContainer.innerHTML = "";
-
-    const start = new Date(startDateInput.dataset.value);
-    const end = new Date(endDateInput.dataset.value);
-    autoWeekendHolidays = start && end ? getWeekendDates(start, end) : [];
-
-    const allDates = [...new Set([...autoWeekendHolidays, ...holidays])].sort();
-
-    allDates.forEach((date) => {
-      const tag = document.createElement("span");
-      const isAuto = autoWeekendHolidays.includes(date);
-
-      tag.className = `inline-flex items-center rounded-md px-3 py-1 text-sm text-white cursor-pointer ${
-        isAuto ? "bg-gray-500" : "bg-red-500"
-      } ml-1 mb-1`;
-      tag.textContent = formatDateReadable(date);
-
-      if (!isAuto) {
-        const close = document.createElement("span");
-        close.innerHTML = "&times;";
-        close.className = "ml-2 font-bold";
-        close.addEventListener("click", (e) => {
-          e.stopPropagation();
-          removeHoliday(date);
-        });
-        tag.appendChild(close);
-        tag.addEventListener("click", () => removeHoliday(date));
-      }
-
-      holidayTagsContainer.appendChild(tag);
-    });
-
-    const selected = allDates.map((d) => new Date(d));
-    fp.setDate(selected, false);
-    holidayPicker.value = "";
-  };
-
-  const removeHoliday = (date) => {
-    holidays = holidays.filter((d) => d !== date);
-    holidays.sort();
-    fp.setDate(holidays, false);
     updateHolidayTags();
     calculateResults();
-  };
+  });
+};
 
-  const calculateResults = () => {
-    const startStr = startDateInput.dataset.value;
-    const endStr = endDateInput.dataset.value;
+// === Init
+window.addEventListener("DOMContentLoaded", () => {
+  const savedTheme = localStorage.getItem("theme");
 
-    if (!startStr || !endStr) return (resultTable.innerHTML = "");
-
-    const start = new Date(startStr);
-    const end = new Date(endStr);
-
-    if (start >= end)
-      return alert("Tanggal mulai harus lebih awal dari tanggal akhir.");
-
-    let workingDays = 0,
-      totalHolidays = 0,
-      date = new Date(start);
-    while (date <= end) {
-      const isWeekend = [0, 6].includes(date.getDay());
-      if (isWeekend) totalHolidays++;
-      else workingDays++;
-      date.setDate(date.getDate() + 1);
-    }
-
-    const extraHolidays = holidays.filter((h) => {
-      const d = new Date(h);
-      return d >= start && d <= end && ![0, 6].includes(d.getDay());
-    });
-
-    workingDays -= extraHolidays.length;
-    totalHolidays += extraHolidays.length;
-
-    const totalDays = (end - start) / 86400000 + 1;
-    const adjustedDuration = totalDays - extraHolidays.length;
-    const totalWeeks = Math.ceil(adjustedDuration / 7);
-    const totalHours = workingDays * 9;
-    const totalAllHours = totalDays * 24;
-    const realWorkHours = Math.round(workingDays * 7.052173913 * 100) / 100;
-
-    const num = (n) => n.toLocaleString("id-ID");
-
-    resultTable.innerHTML = `
-      <tr><th class="text-left font-semibold px-2 py-1">Jumlah Minggu</th><td class="px-2 py-1">${num(
-        totalWeeks
-      )} Minggu</td></tr>
-      <tr class="calc-row" data-formula="${totalDays} Hari × 24 Jam = ${totalAllHours} Jam">
-        <th class="text-left font-semibold px-2 py-1">Jumlah Semua Hari</th>
-        <td class="px-2 py-1">${num(
-          totalDays
-        )} Hari <i class="bi bi-calculator ml-2 text-gray-600 dark:text-orange-400"></i><span class="ml-2 text-sm text-gray-600 dark:text-orange-400 hidden calc-text"></span></td>
-      </tr>
-      <tr><th class="text-left font-semibold px-2 py-1 text-red-500">Jumlah Hari Libur</th><td class="px-2 py-1 text-red-500 font-semibold">${num(
-        totalHolidays
-      )} Hari</td></tr>
-      <tr class="calc-row" data-formula="${workingDays} Hari × 9 Jam = ${totalHours} Jam">
-        <th class="text-left font-semibold px-2 py-1">Jumlah Hari Kerja</th>
-        <td class="px-2 py-1">${num(
-          workingDays
-        )} Hari <i class="bi bi-calculator ml-2 text-gray-600 dark:text-orange-400"></i><span class="ml-2 text-sm text-gray-600 dark:text-orange-400 hidden calc-text"></span></td>
-      </tr>
-      <tr class="calc-row" data-formula="${workingDays} Hari × 7.052173913 Jam = ${realWorkHours} Jam">
-        <th class="text-left font-semibold px-2 py-1 text-green-500 dark:text-lime-400">Jumlah Jam Kerja Asli</th>
-        <td class="px-2 py-1 font-semibold text-green-500 dark:text-lime-400">${realWorkHours} Jam <i class="bi bi-calculator ml-2 text-gray-600 dark:text-orange-400"></i><span class="ml-2 text-sm text-gray-600 dark:text-orange-400 hidden calc-text"></span></td>
-      </tr>
-    `;
-
-    document.querySelectorAll(".calc-row").forEach((row) => {
-      row.addEventListener("click", () => {
-        const icon = row.querySelector("i");
-        const text = row.querySelector(".calc-text");
-        const formula = row.dataset.formula;
-        const isShown = icon.classList.contains("bi-calculator-fill");
-
-        icon.classList.toggle("bi-calculator", isShown);
-        icon.classList.toggle("bi-calculator-fill", !isShown);
-        text.textContent = isShown ? "" : formula;
-        text.classList.toggle("hidden", isShown);
-      });
-    });
-
-    updateHolidayTags();
-  };
-
-  const toggleTheme = () => {
-    html.classList.toggle("dark");
-    const isDark = html.classList.contains("dark");
-    localStorage.setItem("theme", isDark ? "dark" : "light");
-    themeBtn.classList.toggle("bg-yellow-500", !isDark);
-    themeBtn.classList.toggle("dark:bg-gray-700", isDark);
-    themeIcon.className = isDark ? "bi bi-moon-stars-fill" : "bi bi-sun-fill";
-  };
-
-  themeBtn?.addEventListener("click", toggleTheme);
-
-  (() => {
-    const btn = themeBtn;
-    let offsetX = 0,
-      offsetY = 0,
-      isDragging = false;
-
-    const move = (x, y) => {
-      btn.style.left = `${x}px`;
-      btn.style.top = `${y}px`;
-      btn.style.right = "auto";
-      btn.style.bottom = "auto";
-      btn.style.position = "fixed";
-    };
-
-    btn?.addEventListener("mousedown", (e) => {
-      isDragging = true;
-      offsetX = e.clientX - btn.getBoundingClientRect().left;
-      offsetY = e.clientY - btn.getBoundingClientRect().top;
-      btn.style.transition = "none";
-    });
-
-    document.addEventListener("mousemove", (e) => {
-      if (isDragging) move(e.clientX - offsetX, e.clientY - offsetY);
-    });
-
-    document.addEventListener("mouseup", () => {
-      isDragging = false;
-      btn.style.transition = "";
-    });
-
-    btn?.addEventListener(
-      "touchstart",
-      (e) => {
-        const touch = e.touches[0];
-        offsetX = touch.clientX - btn.getBoundingClientRect().left;
-        offsetY = touch.clientY - btn.getBoundingClientRect().top;
-        btn.style.transition = "none";
-      },
-      { passive: false }
-    );
-
-    btn?.addEventListener(
-      "touchmove",
-      (e) => {
-        const t = e.touches[0];
-        move(t.clientX - offsetX, t.clientY - offsetY);
-        e.preventDefault();
-      },
-      { passive: false }
-    );
-  })();
-
-  if (localStorage.getItem("theme") === "light") {
-    html.classList.remove("dark");
-  } else {
+  if (savedTheme === "dark" || !savedTheme) {
     html.classList.add("dark");
+    themeIcon.className = "bi bi-moon-stars-fill";
+    themeBtn.classList.add("dark:bg-gray-700");
+    themeBtn.classList.remove("bg-yellow-500");
+  } else {
+    html.classList.remove("dark");
+    themeIcon.className = "bi bi-sun-fill";
+    themeBtn.classList.remove("dark:bg-gray-700");
+    themeBtn.classList.add("bg-yellow-500");
   }
-  toggleTheme(); // sinkronisasi icon UI
+
+  themeBtn.addEventListener("click", toggleTheme);
+  setupDraggableButton();
 
   const today = new Date();
   const startMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -294,20 +368,17 @@ document.addEventListener("DOMContentLoaded", () => {
     allowInput: false,
     clickOpens: true,
     onChange: (dates) => {
-      holidays = dates.map(
-        (d) =>
-          new Date(d.getTime() - d.getTimezoneOffset() * 60000)
-            .toISOString()
-            .split("T")[0]
-      );
-      holidays.sort();
+      holidaysManual.length = 0;
+      dates.forEach((d) => {
+        const iso = d.toLocaleDateString("sv-SE");
+        holidaysManual.push(iso);
+      });
+      holidaysManual.sort();
       updateHolidayTags();
       calculateResults();
     },
   });
 
   calendarIcon?.addEventListener("click", () => fp.open());
-
-  calculateResults();
-  updateHolidayTags();
+  subscribeToRealtimeHoliday();
 });

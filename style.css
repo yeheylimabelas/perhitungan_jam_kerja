@@ -66,3 +66,18 @@ table .bg-gray {
   background-color: #fca311;
   color: white;
 }
+
+.flatpickr-day.flatpickr-weekend {
+  background-color: #6b7280 !important;
+  color: white !important;
+}
+
+.flatpickr-day.flatpickr-dbholiday {
+  background-color: #f97316 !important;
+  color: white !important;
+}
+
+.flatpickr-day.flatpickr-disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
