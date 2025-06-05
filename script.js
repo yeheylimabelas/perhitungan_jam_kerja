@@ -36,6 +36,7 @@ const holidaysManual = [];
 const holidaysDB = [];
 let autoWeekendHolidays = [];
 let fp = null;
+let showWeekend = true;
 
 const monthNames = [
   "Jan",
@@ -147,7 +148,11 @@ const updateHolidayTags = () => {
   autoWeekendHolidays = getWeekendDates(start, end);
 
   const allDates = [
-    ...new Set([...autoWeekendHolidays, ...holidaysDB, ...holidaysManual]),
+    ...new Set([
+      ...(showWeekend ? autoWeekendHolidays : []),
+      ...holidaysDB,
+      ...holidaysManual,
+    ]),
   ].sort();
 
   allDates.forEach((date) => {
@@ -377,6 +382,11 @@ window.addEventListener("DOMContentLoaded", () => {
       updateHolidayTags();
       calculateResults();
     },
+  });
+
+  document.getElementById("toggleWeekend").addEventListener("change", (e) => {
+    showWeekend = e.target.checked;
+    updateHolidayTags();
   });
 
   calendarIcon?.addEventListener("click", () => fp.open());

@@ -80,10 +80,28 @@
             <span class="cursor-pointer text-xl" id="calendarIcon">📅</span>
           </div>
         </div>
+        <div class="flex items-center mb-3">
+          <span class="text-sm mr-3 text-gray-700 dark:text-gray-300"
+            >Show Weekend</span
+          >
+          <label class="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              id="toggleWeekend"
+              class="sr-only peer"
+              checked
+            />
+            <div
+              class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-green-500 transition-all duration-300"
+            ></div>
+            <div
+              class="absolute left-0.5 top-0.5 w-5 h-5 bg-white rounded-full shadow-md transform peer-checked:translate-x-5 transition-all duration-300"
+            ></div>
+          </label>
+        </div>
 
         <div id="holidayTagsContainer" class="flex flex-wrap gap-2"></div>
       </form>
-
       <div id="result" class="mt-10">
         <h2 class="text-2xl font-semibold mb-4">Hasil Perhitungan</h2>
         <table

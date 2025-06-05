@@ -81,3 +81,10 @@ table .bg-gray {
   cursor: not-allowed;
   opacity: 0.6;
 }
+
+#toggleWeekend:checked + label span:first-child {
+  background-color: #22c55e;
+}
+#toggleWeekend:checked + label span:last-child {
+  transform: translateX(1.5rem);
+}
