@@ -36,7 +36,8 @@ const holidaysManual = [];
 const holidaysDB = [];
 let autoWeekendHolidays = [];
 let fp = null;
-let showWeekend = true;
+let showWeekend = false;
+const holidaysDBMap = new Map();
 
 const monthNames = [
   "Jan",
@@ -165,7 +166,21 @@ const updateHolidayTags = () => {
       "inline-flex items-center rounded-md px-3 py-1 text-sm text-white ml-1 mb-1 " +
       (isAuto ? "bg-gray-500" : isDB ? "bg-orange-500" : "bg-red-500");
 
-    tag.textContent = formatDateReadable(date);
+    let showDesc = false;
+    const labelBase = formatDateReadable(date);
+    const description = holidaysDBMap.get(date);
+
+    tag.textContent = labelBase;
+
+    if (isDB && description) {
+      tag.style.cursor = "pointer";
+      tag.addEventListener("click", () => {
+        showDesc = !showDesc;
+        tag.innerHTML = showDesc
+          ? `${labelBase}&nbsp;<span class="font-bold italic">(${description})</span>`
+          : labelBase;
+      });
+    }
 
     if (isManual) {
       const close = document.createElement("span");
@@ -333,10 +348,14 @@ const subscribeToRealtimeHoliday = () => {
 
   unsubscribe = onSnapshot(q, (snapshot) => {
     holidaysDB.length = 0;
+    holidaysDBMap.clear();
+
     snapshot.forEach((doc) => {
       const d = doc.data().DateHoliday.toDate();
       const dateStr = d.toLocaleDateString("sv-SE");
+      const desc = doc.data().Description || "";
       holidaysDB.push(dateStr);
+      holidaysDBMap.set(dateStr, desc);
     });
     updateHolidayTags();
     calculateResults();
@@ -391,4 +410,5 @@ window.addEventListener("DOMContentLoaded", () => {
 
   calendarIcon?.addEventListener("click", () => fp.open());
   subscribeToRealtimeHoliday();
+  updateHolidayTags();
 });
