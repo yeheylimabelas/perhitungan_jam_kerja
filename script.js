@@ -175,26 +175,23 @@ const updateHolidayTags = () => {
     const labelBase = formatDateReadable(date);
     const description = holidaysDBMap.get(date);
 
-    tag.textContent = labelBase;
+    if (isDB && description) {
+      tag.innerHTML = `${labelBase} <i class="bi bi-caret-right-fill ml-1 transition-all"></i>`;
+    } else {
+      tag.textContent = labelBase;
+    }
 
     if (isDB && description) {
       tag.style.cursor = "pointer";
-
-      const arrow = document.createElement("span");
-      arrow.className = "material-symbols-outlined ml-1";
-      arrow.textContent = "arrow_right";
-      tag.appendChild(arrow);
-
       tag.addEventListener("click", () => {
         showDesc = !showDesc;
-        tag.innerHTML = showDesc
-          ? `${labelBase}&nbsp;<span class="font-bold italic">(${description})</span>`
-          : labelBase;
+        const iconClass = showDesc
+          ? "bi bi-caret-left-fill ml-1 transition-all"
+          : "bi bi-caret-right-fill ml-1 transition-all";
 
-        const arrowSpan = document.createElement("span");
-        arrowSpan.className = "material-symbols-outlined ml-1";
-        arrowSpan.textContent = showDesc ? "arrow_left" : "arrow_right";
-        tag.appendChild(arrowSpan);
+        tag.innerHTML = showDesc
+          ? `${labelBase} <span class="font-bold italic">&nbsp(${description})</span> <i class="${iconClass}"></i>`
+          : `${labelBase} <i class="${iconClass}"></i>`;
       });
     }
 
