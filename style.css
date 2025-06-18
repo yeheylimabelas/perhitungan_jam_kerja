@@ -88,3 +88,12 @@ table .bg-gray {
 #toggleWeekend:checked + label span:last-child {
   transform: translateX(1.5rem);
 }
+
+.material-symbols-outlined {
+  font-size: 18px;
+  vertical-align: middle;
+}
+
+.calc-text {
+  white-space: nowrap;
+}
