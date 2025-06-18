@@ -63,6 +63,10 @@ const dayNames = [
   "Sabtu",
 ];
 
+const today = new Date();
+const maxYear = today.getFullYear();
+const maxDate = new Date(maxYear, 11, 31);
+
 // === Utilities ===
 const formatDateReadable = (str) => {
   const date = new Date(str + "T00:00:00");
@@ -122,6 +126,7 @@ const setupFlatpickr = (input, icon, defaultDate) => {
   const instance = flatpickr(input, {
     dateFormat: "Y-m-d",
     defaultDate,
+    maxDate: maxDate,
     allowInput: false,
     onChange: (dates) => syncInput(input, dates),
     onReady: (dates) => syncInput(input, dates),
@@ -174,11 +179,22 @@ const updateHolidayTags = () => {
 
     if (isDB && description) {
       tag.style.cursor = "pointer";
+
+      const arrow = document.createElement("span");
+      arrow.className = "material-symbols-outlined ml-1";
+      arrow.textContent = "arrow_right";
+      tag.appendChild(arrow);
+
       tag.addEventListener("click", () => {
         showDesc = !showDesc;
         tag.innerHTML = showDesc
           ? `${labelBase}&nbsp;<span class="font-bold italic">(${description})</span>`
           : labelBase;
+
+        const arrowSpan = document.createElement("span");
+        arrowSpan.className = "material-symbols-outlined ml-1";
+        arrowSpan.textContent = showDesc ? "arrow_left" : "arrow_right";
+        tag.appendChild(arrowSpan);
       });
     }
 
@@ -389,6 +405,7 @@ window.addEventListener("DOMContentLoaded", () => {
   fp = flatpickr(holidayPicker, {
     mode: "multiple",
     dateFormat: "Y-m-d",
+    maxDate: maxDate,
     allowInput: false,
     clickOpens: true,
     onChange: (dates) => {
