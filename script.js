@@ -402,18 +402,23 @@ window.addEventListener("DOMContentLoaded", () => {
   fp = flatpickr(holidayPicker, {
     mode: "multiple",
     dateFormat: "Y-m-d",
-    maxDate: maxDate,
     allowInput: false,
     clickOpens: true,
-    onChange: (dates) => {
+    onChange: (dates, dateStr, instance) => {
       holidaysManual.length = 0;
+
       dates.forEach((d) => {
         const iso = d.toLocaleDateString("sv-SE");
         holidaysManual.push(iso);
       });
+
       holidaysManual.sort();
       updateHolidayTags();
       calculateResults();
+
+      if (dates.length > 0) {
+        instance.jumpToDate(dates[dates.length - 1]);
+      }
     },
   });
 
