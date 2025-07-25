@@ -266,45 +266,70 @@ const calculateResults = () => {
 
   const num = (n) => n.toLocaleString("id-ID");
 
+  const colorJumlahHariKerja =
+    "font-semibold text-amber-500 dark:text-amber-300";
+  const colorJumlahJamKerjaAsli =
+    "font-semibold text-green-500 dark:text-lime-400";
+
+  // === Tabel hasil utama ===
   resultTable.innerHTML = `
-    <tr><th class="text-left font-semibold px-2 py-1">Jumlah Minggu</th><td class="px-2 py-1">${num(
-      totalWeeks
-    )} Minggu</td></tr>
-    <tr class="calc-row" data-formula="${totalDays} Hari × 24 Jam = ${totalAllHours} Jam">
-      <th class="text-left font-semibold px-2 py-1">Jumlah Semua Hari</th>
-      <td class="px-2 py-1">${num(
-        totalDays
-      )} Hari <i class="bi bi-calculator ml-2 text-gray-600 dark:text-orange-400"></i><span class="ml-2 text-sm text-gray-600 dark:text-orange-400 hidden calc-text"></span></td>
-    </tr>
-    <tr><th class="text-left font-semibold px-2 py-1 text-red-500">Jumlah Hari Libur</th><td class="px-2 py-1 text-red-500 font-semibold">${num(
-      totalHolidays
-    )} Hari</td></tr>
-    <tr class="calc-row" data-formula="${workingDays} Hari × 9 Jam = ${totalHours} Jam">
-      <th class="text-left font-semibold px-2 py-1">Jumlah Hari Kerja</th>
-      <td class="px-2 py-1">${num(
-        workingDays
-      )} Hari <i class="bi bi-calculator ml-2 text-gray-600 dark:text-orange-400"></i><span class="ml-2 text-sm text-gray-600 dark:text-orange-400 hidden calc-text"></span></td>
-    </tr>
-    <tr class="calc-row" data-formula="${workingDays} Hari × 7.052173913 Jam = ${realWorkHours} Jam">
-      <th class="text-left font-semibold px-2 py-1 text-green-500 dark:text-lime-400">Jumlah Jam Kerja Asli</th>
-      <td class="px-2 py-1 font-semibold text-green-500 dark:text-lime-400">${realWorkHours} Jam <i class="bi bi-calculator ml-2 text-gray-600 dark:text-orange-400"></i><span class="ml-2 text-sm text-gray-600 dark:text-orange-400 hidden calc-text"></span></td>
-    </tr>
+    <thead>
+      <tr>
+        <th class="text-left px-2 py-1">Label</th>
+        <th class="text-left px-2 py-1">Nilai</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th class="text-left font-semibold px-2 py-1">Jumlah Minggu</th>
+        <td class="px-2 py-1">${num(totalWeeks)} Minggu</td>
+      </tr>
+      <tr>
+        <th class="text-left font-semibold px-2 py-1 text-red-500">Jumlah Hari Libur</th>
+        <td class="px-2 py-1 text-red-500 font-semibold">${num(
+          totalHolidays
+        )} Hari</td>
+      </tr>
+      <tr>
+        <th class="text-left font-semibold px-2 py-1"><i>Jumlah Semua Hari</i></th>
+        <td class="px-2 py-1"><i>${num(totalDays)} Hari</i></td>
+      </tr>
+      <tr>
+        <th class="text-left font-semibold px-2 py-1 ${colorJumlahHariKerja}"><i>Jumlah Hari Kerja</i></th>
+        <td class="px-2 py-1 ${colorJumlahHariKerja}"><i>${num(
+    workingDays
+  )} Hari</i></td>
+      </tr>
+      <tr>
+        <th class="text-left font-semibold px-2 py-1 ${colorJumlahJamKerjaAsli}"><i>Jumlah Jam Kerja Asli</i></th>
+        <td class="px-2 py-1 font-semibold ${colorJumlahJamKerjaAsli}"><i>${realWorkHours} Jam</i></td>
+      </tr>
+    </tbody>
   `;
 
-  document.querySelectorAll(".calc-row").forEach((row) => {
-    row.addEventListener("click", () => {
-      const icon = row.querySelector("i");
-      const text = row.querySelector(".calc-text");
-      const formula = row.dataset.formula;
-      const isShown = icon.classList.contains("bi-calculator-fill");
+  // === Bagian "Cara Kalkulasi"
+  const calcContainer = document.getElementById("calculationExplanation");
+  const isCalcShown = document.getElementById("toggleCalculation")?.checked;
 
-      icon.classList.toggle("bi-calculator", isShown);
-      icon.classList.toggle("bi-calculator-fill", !isShown);
-      text.textContent = isShown ? "" : formula;
-      text.classList.toggle("hidden", isShown);
-    });
-  });
+  if (isCalcShown) {
+    calcContainer.innerHTML = `
+      <div>Jumlah Semua Hari → ${num(totalDays)} Hari × 24 Jam = ${num(
+      totalAllHours
+    )} Jam</div>
+      <div class="${colorJumlahHariKerja}">Jumlah Hari Kerja → ${num(
+      workingDays
+    )} Hari × 9 Jam = ${num(totalHours)} Jam</div>
+      <div class="${colorJumlahJamKerjaAsli}">Jumlah Jam Kerja Asli → ${num(
+      workingDays
+    )} Hari × 7.052173913 Jam = ${realWorkHours} Jam</div>
+    `;
+    calcContainer.classList.remove("hidden");
+  } else {
+    calcContainer.classList.add("hidden");
+    calcContainer.innerHTML = "";
+  }
 
+  // === Warnai Flatpickr
   if (fp && typeof fp.set === "function") {
     fp.set("disable", [
       function (date) {
@@ -334,6 +359,10 @@ const calculateResults = () => {
 
   updateHolidayTags();
 };
+
+document.getElementById("toggleCalculation").addEventListener("change", () => {
+  calculateResults();
+});
 
 // === Realtime Firestore
 let unsubscribe = null;
