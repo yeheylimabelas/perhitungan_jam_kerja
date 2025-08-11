@@ -262,13 +262,15 @@ const calculateResults = () => {
   const totalWeeks = Math.ceil(adjustedDuration / 7);
   const totalHours = workingDays * 9;
   const totalAllHours = totalDays * 24;
-  const realWorkHours = Math.round(workingDays * 7.052173913 * 100) / 100;
+  const totalAllHourHolidays = totalHolidays * 24;
+  const realWorkHours = Math.round(workingDays * 7.05 * 100) / 100;
 
   const num = (n) => n.toLocaleString("id-ID");
 
+  const colorJumlahHariLibur = "font-semibold text-red-500";
   const colorJumlahHariKerja =
     "font-semibold text-amber-500 dark:text-amber-300";
-  const colorJumlahJamKerjaAsli =
+  const colorJumlahJamKerjaHarian =
     "font-semibold text-green-500 dark:text-lime-400";
 
   // === Tabel hasil utama ===
@@ -285,24 +287,24 @@ const calculateResults = () => {
         <td class="px-2 py-1">${num(totalWeeks)} Minggu</td>
       </tr>
       <tr>
-        <th class="text-left font-semibold px-2 py-1 text-red-500">Jumlah Hari Libur</th>
-        <td class="px-2 py-1 text-red-500 font-semibold">${num(
-          totalHolidays
-        )} Hari</td>
+      <th class="text-left font-semibold px-2 py-1"><i>Jumlah Keseluruhan Hari</i></th>
+      <td class="px-2 py-1"><i>${num(totalDays)} Hari</i></td>
       </tr>
       <tr>
-        <th class="text-left font-semibold px-2 py-1"><i>Jumlah Semua Hari</i></th>
-        <td class="px-2 py-1"><i>${num(totalDays)} Hari</i></td>
+        <th class="text-left px-2 py-1 ${colorJumlahHariLibur}">Jumlah Hari Libur</th>
+        <td class="px-2 py-1 ${colorJumlahHariLibur}">${num(
+    totalHolidays
+  )} Hari</td>
       </tr>
       <tr>
-        <th class="text-left font-semibold px-2 py-1 ${colorJumlahHariKerja}"><i>Jumlah Hari Kerja</i></th>
+        <th class="text-left px-2 py-1 ${colorJumlahHariKerja}"><i>Jumlah Hari Kerja</i></th>
         <td class="px-2 py-1 ${colorJumlahHariKerja}"><i>${num(
     workingDays
   )} Hari</i></td>
       </tr>
       <tr>
-        <th class="text-left font-semibold px-2 py-1 ${colorJumlahJamKerjaAsli}"><i>Jumlah Jam Kerja Asli</i></th>
-        <td class="px-2 py-1 font-semibold ${colorJumlahJamKerjaAsli}"><i>${realWorkHours} Jam</i></td>
+        <th class="text-left px-2 py-1 ${colorJumlahJamKerjaHarian}"><i>Jumlah Jam Kerja Harian</i></th>
+        <td class="px-2 py-1 ${colorJumlahJamKerjaHarian}"><i>${realWorkHours} Jam</i></td>
       </tr>
     </tbody>
   `;
@@ -313,15 +315,18 @@ const calculateResults = () => {
 
   if (isCalcShown) {
     calcContainer.innerHTML = `
-      <div>Jumlah Semua Hari → ${num(totalDays)} Hari × 24 Jam = ${num(
+      <div>Jumlah Keseluruhan Jam → ${num(totalDays)} Hari × 24 Jam = ${num(
       totalAllHours
     )} Jam</div>
-      <div class="${colorJumlahHariKerja}">Jumlah Hari Kerja → ${num(
+      <div class="${colorJumlahHariLibur}">Jumlah Jam Libur → ${num(
+      totalHolidays
+    )} Hari × 24 Jam = ${num(totalAllHourHolidays)} Jam</div>
+      <div class="${colorJumlahHariKerja}">Jumlah Jam Kerja + Istirahat → ${num(
       workingDays
     )} Hari × 9 Jam = ${num(totalHours)} Jam</div>
-      <div class="${colorJumlahJamKerjaAsli}">Jumlah Jam Kerja Asli → ${num(
+      <div class="${colorJumlahJamKerjaHarian}">Jumlah Jam Kerja Harian → ${num(
       workingDays
-    )} Hari × 7.052173913 Jam = ${realWorkHours} Jam</div>
+    )} Hari × 7.05 Jam = ${realWorkHours} Jam</div>
     `;
     calcContainer.classList.remove("hidden");
   } else {
