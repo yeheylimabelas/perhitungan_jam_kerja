@@ -327,10 +327,6 @@ const calculateResults = () => {
     </thead>
     <tbody>
       <tr>
-        <th class="text-left font-semibold px-2 py-1">Jumlah Minggu</th>
-        <td class="px-2 py-1">${num(totalWeeks)} Minggu</td>
-      </tr>
-      <tr>
       <th class="text-left font-semibold px-2 py-1">Jumlah Keseluruhan Hari</th>
       <td class="px-2 py-1">${num(totalDays)} Hari</td>
       </tr>
