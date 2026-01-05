@@ -64,8 +64,13 @@ const dayNames = [
 ];
 
 const today = new Date();
-const maxYear = today.getFullYear();
-const maxDate = new Date(maxYear, 11, 31);
+const maxDate = new Date(today.getFullYear() + 1, 11, 31, 23, 59, 59, 999);
+let calculationMode = "until";
+let isHolidayLoading = false;
+let lastFetchedRange = {
+  start: null,
+  end: null,
+};
 
 // === Utilities ===
 const formatDateReadable = (str) => {
@@ -87,6 +92,39 @@ const getWeekendDates = (start, end) => {
 };
 
 const num = (n) => n.toLocaleString("id-ID");
+
+const disableDateInputs = () => {
+  startDateInput.disabled = true;
+  startDateInput.classList.add("date-disabled");
+
+  endDateInput.disabled = true;
+  endDateInput.classList.add("date-disabled");
+};
+
+const enableDateInputs = () => {
+  startDateInput.disabled = false;
+  startDateInput.classList.remove("date-disabled");
+
+  endDateInput.disabled = false;
+  endDateInput.classList.remove("date-disabled");
+};
+
+const showGlobalAlert = () => {
+  const alert = document.getElementById("globalAlert");
+
+  alert.classList.remove("hidden");
+  alert.classList.add("show");
+
+  clearTimeout(alert._timer);
+  alert._timer = setTimeout(() => {
+    alert.classList.remove("show");
+    alert.classList.add("hidden");
+  }, 4000);
+};
+
+const isSameRange = (start, end) => {
+  return lastFetchedRange.start === start && lastFetchedRange.end === end;
+};
 
 // === Theme ===
 const toggleTheme = () => {
@@ -229,13 +267,19 @@ const removeHoliday = (date) => {
 
 // === Hitung Jam Kerja
 const calculateResults = () => {
+  if (isHolidayLoading) return;
+
   const startStr = startDateInput.dataset.value;
   const endStr = endDateInput.dataset.value;
   if (!startStr || !endStr) return (resultTable.innerHTML = "");
 
   const start = new Date(startStr);
   const end = new Date(endStr);
-  if (start >= end)
+
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  if (start > end)
     return alert("Tanggal mulai harus lebih awal dari tanggal akhir.");
 
   let workingDays = 0,
@@ -365,6 +409,100 @@ const calculateResults = () => {
   updateHolidayTags();
 };
 
+const applyCalculationMode = () => {
+  const hint = document.getElementById("modeHint");
+  const now = new Date();
+
+  let start, end;
+
+  // =====================
+  // MONTHLY
+  // =====================
+  if (calculationMode === "monthly") {
+    start = new Date(now.getFullYear(), now.getMonth(), 1);
+    end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+    hint.textContent = "Tanggal diatur otomatis untuk bulan ini";
+    disableDateInputs();
+  }
+
+  // =====================
+  // YEARLY
+  // =====================
+  else if (calculationMode === "yearly") {
+    start = new Date(now.getFullYear(), 0, 1);
+    end = new Date(now.getFullYear(), 11, 31);
+
+    hint.textContent = "Tanggal diatur otomatis untuk tahun ini";
+    disableDateInputs();
+  }
+
+  // =====================
+  // UNTIL TODAY
+  // =====================
+  else if (calculationMode === "until") {
+    // START = awal bulan ini
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    startOfMonth.setHours(0, 0, 0, 0);
+    now.setHours(0, 0, 0, 0);
+
+    const startISO = startOfMonth.toLocaleDateString("sv-SE");
+    const endISO = now.toLocaleDateString("sv-SE");
+
+    startDateInput.dataset.value = startISO;
+    startDateInput.value = formatDateReadable(startISO);
+
+    endDateInput.dataset.value = endISO;
+    endDateInput.value = formatDateReadable(endISO);
+
+    hint.textContent =
+      "Tanggal diatur otomatis dari awal bulan ini hingga hari ini";
+
+    disableDateInputs();
+
+    calculateResults();
+    subscribeToRealtimeHoliday();
+    return;
+  }
+
+  // =====================
+  // CUSTOM DATE
+  // =====================
+  else if (calculationMode === "custom") {
+    enableDateInputs();
+    hint.textContent = "Gunakan tanggal yang ada atau ubah secara manual";
+
+    calculateResults();
+    return;
+  }
+
+  // =====================
+  // APPLY AUTO RANGE
+  // =====================
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+
+  const startISO = start.toLocaleDateString("sv-SE");
+  const endISO = end.toLocaleDateString("sv-SE");
+
+  startDateInput.dataset.value = startISO;
+  endDateInput.dataset.value = endISO;
+
+  startDateInput.value = formatDateReadable(startISO);
+  endDateInput.value = formatDateReadable(endISO);
+
+  calculateResults();
+  subscribeToRealtimeHoliday();
+};
+
+document.querySelectorAll('input[name="calculationMode"]').forEach((radio) => {
+  radio.addEventListener("change", (e) => {
+    calculationMode = e.target.value;
+    applyCalculationMode();
+  });
+});
+
 document.getElementById("toggleCalculation").addEventListener("change", () => {
   calculateResults();
 });
@@ -372,12 +510,25 @@ document.getElementById("toggleCalculation").addEventListener("change", () => {
 // === Realtime Firestore
 let unsubscribe = null;
 const subscribeToRealtimeHoliday = () => {
-  if (unsubscribe) unsubscribe();
-
   const startValue = startDateInput.dataset.value;
   const endValue = endDateInput.dataset.value;
 
   if (!startValue || !endValue) return;
+
+  // ⛔ CEK RANGE SAMA → JANGAN FETCH
+  if (isSameRange(startValue, endValue)) {
+    return;
+  }
+
+  // simpan range terakhir
+  lastFetchedRange.start = startValue;
+  lastFetchedRange.end = endValue;
+
+  // bersihkan listener lama
+  if (unsubscribe) unsubscribe();
+
+  isHolidayLoading = true;
+  showLoadingResult();
 
   const start = new Date(startValue);
   const end = new Date(endValue);
@@ -404,13 +555,39 @@ const subscribeToRealtimeHoliday = () => {
       holidaysDB.push(dateStr);
       holidaysDBMap.set(dateStr, desc);
     });
+
+    isHolidayLoading = false;
     updateHolidayTags();
     calculateResults();
   });
 };
 
+const showLoadingResult = () => {
+  resultTable.innerHTML = `
+    <tr>
+      <td colspan="2" class="px-4 py-6 text-center text-gray-400 italic">
+        Mengambil data hari libur…
+      </td>
+    </tr>
+  `;
+};
+
 // === Init
 window.addEventListener("DOMContentLoaded", () => {
+  const globalAlert = document.getElementById("globalAlert");
+  const closeAlertBtn = document.getElementById("closeAlert");
+
+  closeAlertBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    globalAlert.classList.remove("show");
+    globalAlert.classList.add("hidden");
+  });
+
+  globalAlert.addEventListener("click", () => {
+    globalAlert.classList.remove("show");
+    globalAlert.classList.add("hidden");
+  });
+
   const savedTheme = localStorage.getItem("theme");
 
   if (savedTheme === "dark" || !savedTheme) {
@@ -432,6 +609,22 @@ window.addEventListener("DOMContentLoaded", () => {
   const startMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   setupFlatpickr(startDateInput, startDateIcon, startMonth);
   setupFlatpickr(endDateInput, endDateIcon, today);
+
+  startDateIcon?.addEventListener("click", () => {
+    if (calculationMode === "custom") startDatePicker.open();
+  });
+
+  endDateIcon?.addEventListener("click", () => {
+    if (calculationMode === "custom") endDatePicker.open();
+  });
+
+  [startDateIcon, endDateIcon].forEach((icon) => {
+    icon?.addEventListener("click", () => {
+      if (calculationMode !== "custom") {
+        showGlobalAlert();
+      }
+    });
+  });
 
   fp = flatpickr(holidayPicker, {
     mode: "multiple",
@@ -464,4 +657,6 @@ window.addEventListener("DOMContentLoaded", () => {
   calendarIcon?.addEventListener("click", () => fp.open());
   subscribeToRealtimeHoliday();
   updateHolidayTags();
+  applyCalculationMode();
 });
+``;

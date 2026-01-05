@@ -1,95 +1,16 @@
-body {
-  padding-top: 5px;
-}
-
-.result-label {
-  font-weight: bold;
-}
-
-.table th,
-.table td {
-  text-align: left;
-}
-
-table .bg-gray {
-  background-color: #f0f0f0;
-}
-
-.badge {
-  background-color: #007bff;
-  color: white;
-  border-radius: 12px;
-  padding: 5px 10px;
-  margin-right: 5px;
-  margin-bottom: 5px;
-}
-
-.cursor-pointer {
-  cursor: pointer;
-}
-
-.ms-2 {
-  margin-left: 0.5rem;
-}
-
-.theme-toggle-btn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  z-index: 1000;
-}
-
-.theme-toggle-btn i {
-  font-size: 1.4rem;
-  transition: transform 0.3s ease;
-}
-
-.theme-toggle-btn:hover i {
-  transform: scale(1.2);
-}
-
-.theme-dark {
-  background-color: #343a40;
-  color: white;
-}
-
-.theme-light {
-  background-color: #fca311;
-  color: white;
-}
-
-.flatpickr-day.flatpickr-weekend {
-  background-color: #6b7280 !important;
-  color: white !important;
-}
-
-.flatpickr-day.flatpickr-dbholiday {
-  background-color: #f97316 !important;
-  color: white !important;
-}
-
-.flatpickr-day.flatpickr-disabled {
+.date-disabled {
+  background-color: #374151 !important;
+  border-color: #4b5563 !important;
+  color: #9ca3af !important;
   cursor: not-allowed;
-  opacity: 0.6;
 }
 
-#toggleWeekend:checked + label span:first-child {
-  background-color: #22c55e;
-}
-#toggleWeekend:checked + label span:last-child {
-  transform: translateX(1.5rem);
+.date-disabled:disabled {
+  -webkit-text-fill-color: #9ca3af !important;
+  opacity: 1 !important;
 }
 
-.material-symbols-outlined {
-  font-size: 18px;
-  vertical-align: middle;
+.date-disabled + span {
+  opacity: 0.35;
+  pointer-events: none;
 }

@@ -25,13 +25,77 @@
       href="Clock_icon-removebg-preview.png"
       type="image/x-icon"
     />
+    <link rel="stylesheet" href="style.css" />
   </head>
+  <div id="globalAlert" class="global-alert hidden" role="alert">
+    <div class="global-alert-content">
+      <span class="alert-text">
+        <strong>Tanggal dikunci.</strong>
+        Aktifkan <b>Tanggal Kustom</b> untuk mengubah tanggal mulai dan akhir.
+      </span>
+      <button id="closeAlert" class="alert-close">×</button>
+    </div>
+  </div>
+
   <body
     class="bg-white text-black dark:bg-gray-900 dark:text-white min-h-screen p-4"
   >
     <div class="max-w-3xl mx-auto">
-      <h1 class="text-3xl font-bold mb-6">Perhitungan Jam Kerja United Tractors</h1>
+      <h1 class="text-3xl font-bold mb-6">Perhitungan Jam Kerja</h1>
+      <!-- MODE PERHITUNGAN -->
+      <div class="mb-6">
+        <label class="block mb-2 font-semibold">Opsi Tanggal</label>
 
+        <div class="flex gap-6 items-center flex-wrap">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="calculationMode"
+              value="until"
+              checked
+              class="accent-green-500"
+            />
+            <span>Sampai Hari Ini</span>
+          </label>
+
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="calculationMode"
+              value="monthly"
+              class="accent-green-500"
+            />
+            <span>Bulan Ini</span>
+          </label>
+
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="calculationMode"
+              value="yearly"
+              class="accent-green-500"
+            />
+            <span>Tahun Ini</span>
+          </label>
+
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input
+              type="radio"
+              name="calculationMode"
+              value="custom"
+              class="accent-green-500"
+            />
+            <span>Tanggal Kustom</span>
+          </label>
+        </div>
+
+        <p
+          id="modeHint"
+          class="text-sm mt-2 text-gray-500 dark:text-gray-400"
+        ></p>
+      </div>
+
+      <!-- FORM TANGGAL -->
       <form id="dateForm" class="space-y-6">
         <div>
           <label for="startDate" class="block mb-1 font-medium"
@@ -82,7 +146,7 @@
         </div>
         <div class="flex items-center mb-3">
           <span class="text-sm mr-3 text-gray-700 dark:text-gray-300"
-            >Tampilkan Hari Libur</span
+            >Tampilkan Sabtu & Minggu</span
           >
           <label class="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" id="toggleWeekend" class="sr-only peer" />
@@ -140,7 +204,7 @@
       <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
     </button>
 
-    <script type="module" src="script.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script type="module" src="script.js"></script>
   </body>
 </html>
